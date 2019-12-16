@@ -1,0 +1,203 @@
+---
+title: "Project 2"
+author: "SDS348 Fall 2019"
+date: ''
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+library(knitr)
+
+
+opts_chunk$set(fig.align="center", fig.height=5, message=FALSE, fig.width=8,tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+## Benjamin Sakham Lomborg BL26735
+
+I have choose the data from the 3 Index S&P 500, NASDAQ and Dow Jones 30 (Dow Jones 30) from 01/01/2010 to 12/31/2018. The data is in three datasets. 
+There is 7 variables from the beginning in each dataset. Data, Open, High, Low, Close, Adj. Close and Volume. 
+
+* Variables 
+  + Date
+     - yyyy-mm-dd
+  + Open
+     - The value the index opened in for the day
+  + High
+     - Highest value for the day
+  + Low
+     - Lowest value for the day
+  + Close
+     - The value the index closed in for the day
+  + Adj. Close
+     - The value the index Adj. Close in for the day
+  + Volume
+     - How many stoch there have changed hands during the day
+     
+I have created 3 more variabels PCgange which is $\frac{Close_n}{Close_{n-1}}-1$, CumPChange which is $\sum_{n=1}^{len(n)}PChange_n$ and the index name.
+
+
+
+```{R}
+library(tidyverse)
+library(dplyr)
+library(DataCombine)
+library(ggridges)
+library(gridExtra)
+library(ggplot2)
+library(sandwich)
+library(lmtest)
+library(scatterplot3d)
+
+
+
+SP <- read_csv("SP1018.csv")
+ND <- read_csv("NASDAQ1018.csv")
+DJ <- read_csv("DJ1018.csv")
+
+
+SP <- SP %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+DJ <- DJ %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+ND <- ND %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+
+
+SP$Index <- "S&P 500"
+DJ$Index <- "Dow 30"
+ND$Index <- "NASDAQ"
+
+```
+
+As you can see I Have to remove NA's because otherwise I can't use the "cumsum" function. It means I remove the first observation of each dataset.
+
+
+
+```{R}
+data1 <- full_join(SP,ND)
+data2<- full_join(data1,DJ)
+head(data2)
+nrow(data2)
+data3 <- data2 %>%  mutate(Date2=Date) 
+data4 <- data3 %>% separate(Date2,into = c("year","month","day"))
+```
+
+
+I'll create a binary variable, so if it's september it's 1 and 0 else.
+
+```{R}
+
+data5 <- data4 %>% mutate(September= as.numeric(month=="09")) 
+
+
+
+```
+
+
+
+```{R}
+
+man1 <- manova(cbind(Close,CumPChange)~Index,data=data5)
+summary(man1)
+
+
+```
+
+
+
+```{R}
+
+summary.aov(man1)
+
+
+```
+
+
+
+```{R}
+
+ data5%>%group_by(Index)%>%summarize(mean(Close),mean(CumPChange))
+
+
+```
+
+
+
+
+```{R}
+
+pairwise.t.test(data5$Close,data5$Index, p.adj="none")
+
+pairwise.t.test(data5$CumPChange,data5$Index, p.adj="none")
+
+```
+
+This is 1 MANOVA, 2 ANOVAs, and 6 t tests: should be using as significance level: $\alpha'=0.05/9=0.0055$ and all the variables are still significant
+
+
+Index        2 0.96045   3134.8      4  13572 < 2.2e-16 ***
+Significant differences were found among the three Indexes on the two dependent vaiables, $Pillai \,\,trace=0.96045$ $pseudo \,\,F=(4,13572)=3134.8$ and $P<0.0001$.
+
+Anova for "Close" is $F=(2,6786)=18686$ and $P<0.0001$.
+Anova for "CumPChange" is $F=(2,6786)=18686$ and $P<0.0001$.
+Both of them are significant.
+
+
+```{R}
+data5$Close_c <- data5$Close-mean(data5$Close)
+
+data5$Time <- as.numeric(data5$Date)-14614
+
+data5$Time_c <- data5$Time-mean(data5$Time)
+
+data5$PChange_c <- data5$PChange-mean(data5$PChange)
+
+fit <- lm(PChange~Index*Time_c, data = data5)
+summary(fit)
+bptest(fit)
+
+data5 %>% ggplot(aes(Time_c, PChange, color = Index)) + 
+    geom_point() + geom_smooth(method = "lm", aes(Time_c,PChange, 
+    color = Index)) + xlab("Date (Gap in years)") + ylab("Cumulative procentage change in decimals") + 
+    ggtitle("Retur over time")
+
+
+resids<-fit$residuals
+fitvals<-fit$fitted.values
+ggplot()+geom_point(aes(fitvals,resids))+geom_hline(yintercept=0, col="red")
+
+
+ggplot()+geom_histogram(aes(resids),bins=100)
+
+ggplot()+geom_qq(aes(sample=resids))+geom_qq_line(aes(sample=resids), color='red')
+
+
+summary(fit)$coef[,1:2]
+
+coeftest(fit, vcov = vcovHC(fit))[,1:2]
+
+
+
+
+
+```
+
+
+
+
+
+
+
+```{R}
+fit<-glm(September~PChange+CumPChange,data=data5,family=binomial(link="logit"))
+coeftest(fit)
+
+data5$prob<-predict(fit,type="response") 
+data5$predicted <-ifelse(data5$prob>.5,"fdfd","Not September") 
+table(predict=as.numeric(data5$prob>.5),truth=data5$September)%>%addmargins
+
+table(truth=data5$September, prediction=data5$predicted)%>%addmargins
+
+
+```
+
+

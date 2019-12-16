@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Ben" />
+    <meta name="description" content="My project 3">
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 2</title>
+    <meta name="generator" content="Hugo 0.61.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/blog/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/blog/project2/">Project 2</a></strong>
+          </h3>
+        </div>
+        <div class="blog-title">
+          <h4>
+          January 1, 0001
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="benjamin-sakham-lomborg-bl26735" class="section level2">
+<h2>Benjamin Sakham Lomborg BL26735</h2>
+<p>I have choose the data from the 3 Index S&amp;P 500, NASDAQ and Dow Jones 30 (Dow Jones 30) from 01/01/2010 to 12/31/2018. The data is in three datasets.
+There is 7 variables from the beginning in each dataset. Data, Open, High, Low, Close, Adj. Close and Volume.</p>
+<ul>
+<li>Variables
+<ul>
+<li>Date
+<ul>
+<li>yyyy-mm-dd</li>
+</ul></li>
+<li>Open
+<ul>
+<li>The value the index opened in for the day</li>
+</ul></li>
+<li>High
+<ul>
+<li>Highest value for the day</li>
+</ul></li>
+<li>Low
+<ul>
+<li>Lowest value for the day</li>
+</ul></li>
+<li>Close
+<ul>
+<li>The value the index closed in for the day</li>
+</ul></li>
+<li>Adj. Close
+<ul>
+<li>The value the index Adj. Close in for the day</li>
+</ul></li>
+<li>Volume
+<ul>
+<li>How many stoch there have changed hands during the day</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>I have created 3 more variabels PCgange which is <span class="math inline">\(\frac{Close_n}{Close_{n-1}}-1\)</span>, CumPChange which is <span class="math inline">\(\sum_{n=1}^{len(n)}PChange_n\)</span> and the index name.</p>
+<pre class="r"><code>library(tidyverse)
+library(dplyr)
+library(DataCombine)
+library(ggridges)
+library(gridExtra)
+library(ggplot2)
+library(sandwich)
+library(lmtest)
+library(scatterplot3d)
+
+
+
+SP &lt;- read_csv(&quot;SP1018.csv&quot;)
+ND &lt;- read_csv(&quot;NASDAQ1018.csv&quot;)
+DJ &lt;- read_csv(&quot;DJ1018.csv&quot;)
+
+
+SP &lt;- SP %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+DJ &lt;- DJ %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+ND &lt;- ND %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+
+
+SP$Index &lt;- &quot;S&amp;P 500&quot;
+DJ$Index &lt;- &quot;Dow 30&quot;
+ND$Index &lt;- &quot;NASDAQ&quot;</code></pre>
+<p>As you can see I Have to remove NA’s because otherwise I can’t use the “cumsum” function. It means I remove the first observation of each dataset.</p>
+<pre class="r"><code>data1 &lt;- full_join(SP, ND)
+data2 &lt;- full_join(data1, DJ)
+head(data2)</code></pre>
+<pre><code>## # A tibble: 6 x 10
+##   Date        Open  High   Low Close `Adj Close` Volume  PChange CumPChange
+##   &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt;
+## 1 2010-01-05 1133. 1137. 1130. 1137.       1137. 2.49e9  3.12e-3    0.00312
+## 2 2010-01-06 1136. 1139. 1134. 1137.       1137. 4.97e9  5.46e-4    0.00366
+## 3 2010-01-07 1136. 1142. 1131. 1142.       1142. 5.27e9  4.00e-3    0.00766
+## 4 2010-01-08 1141. 1145. 1136. 1145.       1145. 4.39e9  2.88e-3    0.0105 
+## 5 2010-01-11 1146. 1150. 1142. 1147.       1147. 4.26e9  1.75e-3    0.0123 
+## 6 2010-01-12 1144. 1144. 1132. 1136.       1136. 4.72e9 -9.38e-3    0.00291
+## # … with 1 more variable: Index &lt;chr&gt;</code></pre>
+<pre class="r"><code>nrow(data2)</code></pre>
+<pre><code>## [1] 6789</code></pre>
+<pre class="r"><code>data3 &lt;- data2 %&gt;% mutate(Date2 = Date)
+data4 &lt;- data3 %&gt;% separate(Date2, into = c(&quot;year&quot;, &quot;month&quot;, 
+    &quot;day&quot;))</code></pre>
+<p>I’ll create a binary variable, so if it’s september it’s 1 and 0 else.</p>
+<pre class="r"><code>data5 &lt;- data4 %&gt;% mutate(September = as.numeric(month == &quot;09&quot;))</code></pre>
+<pre class="r"><code>man1 &lt;- manova(cbind(Close, CumPChange) ~ Index, data = data5)
+summary(man1)</code></pre>
+<pre><code>##             Df  Pillai approx F num Df den Df    Pr(&gt;F)    
+## Index        2 0.96045   3134.8      4  13572 &lt; 2.2e-16 ***
+## Residuals 6786                                             
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>summary.aov(man1)</code></pre>
+<pre><code>##  Response Close :
+##               Df     Sum Sq   Mean Sq F value    Pr(&gt;F)    
+## Index          2 2.8261e+11 1.413e+11   18686 &lt; 2.2e-16 ***
+## Residuals   6786 5.1316e+10 7.562e+06                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##  Response CumPChange :
+##               Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## Index          2  39.87 19.9366  172.81 &lt; 2.2e-16 ***
+## Residuals   6786 782.89  0.1154                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>data5 %&gt;% group_by(Index) %&gt;% summarize(mean(Close), mean(CumPChange))</code></pre>
+<pre><code>## # A tibble: 3 x 3
+##   Index   `mean(Close)` `mean(CumPChange)`
+##   &lt;chr&gt;           &lt;dbl&gt;              &lt;dbl&gt;
+## 1 Dow 30         16633.              0.466
+## 2 NASDAQ          4389.              0.647
+## 3 S&amp;P 500         1857.              0.512</code></pre>
+<pre class="r"><code>pairwise.t.test(data5$Close, data5$Index, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data5$Close and data5$Index 
+## 
+##         Dow 30 NASDAQ
+## NASDAQ  &lt;2e-16 -     
+## S&amp;P 500 &lt;2e-16 &lt;2e-16
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data5$CumPChange, data5$Index, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data5$CumPChange and data5$Index 
+## 
+##         Dow 30  NASDAQ 
+## NASDAQ  &lt; 2e-16 -      
+## S&amp;P 500 6.4e-06 &lt; 2e-16
+## 
+## P value adjustment method: none</code></pre>
+<p>This is 1 MANOVA, 2 ANOVAs, and 6 t tests: should be using as significance level: <span class="math inline">\(\alpha&#39;=0.05/9=0.0055\)</span> and all the variables are still significant</p>
+<p>Index 2 0.96045 3134.8 4 13572 &lt; 2.2e-16 ***
+Significant differences were found among the three Indexes on the two dependent vaiables, <span class="math inline">\(Pillai \,\,trace=0.96045\)</span> <span class="math inline">\(pseudo \,\,F=(4,13572)=3134.8\)</span> and <span class="math inline">\(P&lt;0.0001\)</span>.</p>
+<p>Anova for “Close” is <span class="math inline">\(F=(2,6786)=18686\)</span> and <span class="math inline">\(P&lt;0.0001\)</span>.
+Anova for “CumPChange” is <span class="math inline">\(F=(2,6786)=18686\)</span> and <span class="math inline">\(P&lt;0.0001\)</span>.
+Both of them are significant.</p>
+<pre class="r"><code>data5$Close_c &lt;- data5$Close - mean(data5$Close)
+
+data5$Time &lt;- as.numeric(data5$Date) - 14614
+
+data5$Time_c &lt;- data5$Time - mean(data5$Time)
+
+data5$PChange_c &lt;- data5$PChange - mean(data5$PChange)
+
+fit &lt;- lm(PChange ~ Index * Time_c, data = data5)
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = PChange ~ Index * Time_c, data = data5)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.069608 -0.004060  0.000217  0.004873  0.057975 
+## 
+## Coefficients:
+##                       Estimate Std. Error t value Pr(&gt;|t|)  
+## (Intercept)          3.895e-04  2.056e-04   1.894   0.0582 .
+## IndexNASDAQ          1.359e-04  2.908e-04   0.468   0.6402  
+## IndexS&amp;P 500         6.201e-06  2.908e-04   0.021   0.9830  
+## Time_c              -4.116e-08  2.169e-07  -0.190   0.8495  
+## IndexNASDAQ:Time_c  -4.270e-08  3.067e-07  -0.139   0.8893  
+## IndexS&amp;P 500:Time_c -6.222e-08  3.067e-07  -0.203   0.8393  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.009781 on 6783 degrees of freedom
+## Multiple R-squared:  0.0001019,  Adjusted R-squared:  -0.0006351 
+## F-statistic: 0.1383 on 5 and 6783 DF,  p-value: 0.9834</code></pre>
+<pre class="r"><code>bptest(fit)</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit
+## BP = 76.72, df = 5, p-value = 4.069e-15</code></pre>
+<pre class="r"><code>data5 %&gt;% ggplot(aes(Time_c, PChange, color = Index)) + geom_point() + 
+    geom_smooth(method = &quot;lm&quot;, aes(Time_c, PChange, color = Index)) + 
+    xlab(&quot;Date (Gap in years)&quot;) + ylab(&quot;Cumulative procentage change in decimals&quot;) + 
+    ggtitle(&quot;Retur over time&quot;)</code></pre>
+<p><img src="/blog/Project2_files/figure-html/unnamed-chunk-8-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>resids &lt;- fit$residuals
+fitvals &lt;- fit$fitted.values
+ggplot() + geom_point(aes(fitvals, resids)) + geom_hline(yintercept = 0, 
+    col = &quot;red&quot;)</code></pre>
+<p><img src="/blog/Project2_files/figure-html/unnamed-chunk-8-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot() + geom_histogram(aes(resids), bins = 100)</code></pre>
+<p><img src="/blog/Project2_files/figure-html/unnamed-chunk-8-3.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot() + geom_qq(aes(sample = resids)) + geom_qq_line(aes(sample = resids), 
+    color = &quot;red&quot;)</code></pre>
+<p><img src="/blog/Project2_files/figure-html/unnamed-chunk-8-4.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>summary(fit)$coef[, 1:2]</code></pre>
+<pre><code>##                          Estimate   Std. Error
+## (Intercept)          3.895134e-04 2.056156e-04
+## IndexNASDAQ          1.359421e-04 2.907843e-04
+## IndexS&amp;P 500         6.200976e-06 2.907843e-04
+## Time_c              -4.115506e-08 2.168855e-07
+## IndexNASDAQ:Time_c  -4.269758e-08 3.067224e-07
+## IndexS&amp;P 500:Time_c -6.222102e-08 3.067224e-07</code></pre>
+<pre class="r"><code>coeftest(fit, vcov = vcovHC(fit))[, 1:2]</code></pre>
+<pre><code>##                          Estimate   Std. Error
+## (Intercept)          3.895134e-04 1.885396e-04
+## IndexNASDAQ          1.359421e-04 2.957545e-04
+## IndexS&amp;P 500         6.200976e-06 2.739476e-04
+## Time_c              -4.115506e-08 2.198057e-07
+## IndexNASDAQ:Time_c  -4.269758e-08 3.458737e-07
+## IndexS&amp;P 500:Time_c -6.222102e-08 3.192667e-07</code></pre>
+<pre class="r"><code>fit &lt;- glm(September ~ PChange + CumPChange, data = data5, family = binomial(link = &quot;logit&quot;))
+coeftest(fit)</code></pre>
+<pre><code>## 
+## z test of coefficients:
+## 
+##              Estimate Std. Error  z value Pr(&gt;|z|)    
+## (Intercept) -2.465959   0.082998 -29.7111   &lt;2e-16 ***
+## PChange     -0.269944   4.561871  -0.0592   0.9528    
+## CumPChange   0.065004   0.127705   0.5090   0.6107    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>data5$prob &lt;- predict(fit, type = &quot;response&quot;)
+data5$predicted &lt;- ifelse(data5$prob &gt; 0.5, &quot;fdfd&quot;, &quot;Not September&quot;)
+table(predict = as.numeric(data5$prob &gt; 0.5), truth = data5$September) %&gt;% 
+    addmargins</code></pre>
+<pre><code>##        truth
+## predict    0    1  Sum
+##     0   6240  549 6789
+##     Sum 6240  549 6789</code></pre>
+<pre class="r"><code>table(truth = data5$September, prediction = data5$predicted) %&gt;% 
+    addmargins</code></pre>
+<pre><code>##      prediction
+## truth Not September  Sum
+##   0            6240 6240
+##   1             549  549
+##   Sum          6789 6789</code></pre>
+</div>
+
+              <hr>
+              <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div>
+            </div>
+          </div>
+          <hr>
+        <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

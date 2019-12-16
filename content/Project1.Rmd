@@ -1,0 +1,191 @@
+---
+title: "Project 1"
+author: "SDS348 Fall 2019"
+date: ''
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+library(knitr)
+
+
+opts_chunk$set(fig.align="center", fig.height=5, message=FALSE, fig.width=8,tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+## Benjamin Sakham Lomborg BL26735
+
+I have choose the data from the 3 Index S&P 500, NASDAQ and Dow Jones 30 (Dow Jones 30) from 01/01/2010 to 12/31/2018. The data is in three datasets. 
+There is 7 variables from the beginning in each dataset. Data, Open, High, Low, Close, Adj. Close and Volume. 
+
+* Variables 
+  + Date
+     - yyyy-mm-dd
+  + Open
+     - The value the index opened in for the day
+  + High
+     - Highest value for the day
+  + Low
+     - Lowest value for the day
+  + Close
+     - The value the index closed in for the day
+  + Adj. Close
+     - The value the index Adj. Close in for the day
+  + Volume
+     - How many stoch there have changed hands during the day
+     
+I have created 3 more variabels PCgange which is $\frac{Close_n}{Close_{n-1}}-1$, CumPChange which is $\sum_{n=1}^{len(n)}PChange_n$ and the index name.
+
+
+
+```{R}
+library(tidyverse)
+library(dplyr)
+library(DataCombine)
+library(ggridges)
+SP <- read_csv("SP1018.csv")
+ND <- read_csv("NASDAQ1018.csv")
+DJ <- read_csv("DJ1018.csv")
+
+
+SP <- SP %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+DJ <- DJ %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+ND <- ND %>% mutate(PChange=Close/lag(Close)-1) %>% na.omit() %>% mutate(CumPChange=cumsum(PChange))
+
+
+SP$Index <- "S&P 500"
+DJ$Index <- "Dow 30"
+ND$Index <- "NASDAQ"
+
+head(SP)
+```
+
+As you can see I Have to remove NA's because otherwise I can't use the "cumsum" function. It means I remove the first observation of each dataset.
+
+I have choose not to pivot_wieder and pivot_longer after talking to you to the office hours and because my data is allready tidy.
+
+### Joining:
+I make a ful_join to join the 3 datasets because they are really similar to each other and the only difference is the Index name.
+
+```{R}
+data1 <- full_join(SP,ND)
+data2<- full_join(data1,DJ)
+head(data2)
+nrow(data2)
+```
+
+# Wrangling
+Now I wanna make 3 new varibles I can use to explore the data set
+
+
+```{R}
+data3 <- data2 %>%  mutate(Date2=Date) 
+data4 <- data3 %>% separate(Date2,into = c("year","month","day"))
+```
+
+
+Let's look at some summaries so we know the data set a bit better
+
+```{R}
+data4 %>% group_by(Index) %>% summarize_if(is.numeric, mean)
+
+data4 %>% group_by(Index) %>% summarise(sd(PChange)) 
+
+```
+
+
+
+Now I wanna see 3 days there have been the biggest relative change for each index which the biggest first.
+
+
+```{R}
+data4 %>% group_by(Index)%>% top_n(3, abs(PChange)) %>% arrange(desc(abs(PChange)))  %>% select(Date,PChange,Index)
+```
+
+As we can see 2011-08-08 is where alle the indexs lost most value. NASDAQ had the worst day.
+
+Now we can see what the record for most trades on one day is for each index
+
+```{R}
+data4 %>% group_by(Index)%>% top_n(1, Volume) %>% arrange(desc(Volume)) %>% select(Date, PChange, Volume, Index)
+```
+The biggest index have most trades as expected and the smalllest fewest trade
+
+Now we can see which index had the best return over the period if you fx had an ETF (exchange-traded fund) over the full Index.
+```{R}
+data4 %>% group_by(Index) %>% arrange(desc(Date)) %>% select(Date, CumPChange) %>% head(3) %>% arrange(desc(CumPChange))
+```
+
+So NASDAQ is the best index over the periode which make sense because it's the index with most technology stocks. There is'nt calculated for the inflation but it doesn’t matter because it’s the same currency  
+
+But when was the best time to sell if you bought a ETF for each index at 2010-01-04 
+
+```{R}
+data4 %>% group_by(Index) %>%top_n(1, CumPChange)%>% arrange(desc(CumPChange)) %>% select(Date, CumPChange) 
+```
+This is the 3 dates u should sell the.
+
+Now lets see what year, mounth and day is best retur in procentage
+
+```{R}
+data4 %>% group_by(year) %>%   summarize(meanPC=mean(PChange)*100) %>% arrange(desc(meanPC)) %>% head(3)
+data4 %>% group_by(month) %>%   summarize(meanPC=mean(PChange)*100) %>% arrange(desc(meanPC)) %>% head(3)
+data4 %>% group_by(day) %>%   summarize(meanPC=mean(PChange)*100) %>% arrange(desc(meanPC)) %>% head(3)
+                                         
+```
+
+We can see 2013 is the best year, feb is the best month and the 26th is the best day for the three indexes. 
+
+Okay, let's look closer at NASDAQ what is the highest retur possible?
+
+```{R}
+data4 %>% filter(Index=="NASDAQ") %>% select(Low,High, Close) %>% summary()
+(8133/2061-1)*100
+```
+So the max you could get from a ETF from NASDAQ with no gearing (borrowing money to invest):
+$$ \frac{Max_{High}}{Min_{Low}}-1=\frac{8133}{2061}=294.6143\% \text{  return}$$
+
+So the most interesting things when we are looking at the summaries is that NASDAQ have been the best index when we are only looking at the return. If we had some more data fx the var numbers FED or forecasts from investments banks. We could then have checked if the risk is the answer to the big return at NASDAQ compared to the other two indexes. S&P 500 and Dow 30 had a more similar return and maybe they are more “safe” to invest in.
+
+The most surprising thing was that the return in avg. at the 26th was much higher than alle the other dates.
+
+### Visualizations
+
+```{R}
+
+data4 %>% group_by(Date) %>% ggplot(aes(Date,CumPChange,color=Index))+geom_line()+geom_smooth(method = "lm", aes(Date,CumPChange,color=Index))+xlab("Date (Gap in years)")+ylab("Cumulative procentage change in decimals")+ggtitle("Retur over time")
+
+data4 %>% filter(year=="2013")%>% group_by(Index) %>% ggplot(aes(month,PChange, color=Index))+geom_point(stat="summary", alpha= 3/5)+
+  geom_errorbar(stat="summary",alpha=3/5)+xlab("Month 2013")+ylab("Procentage change in decimals")+ggtitle("PChange pr. month for 2013")
+
+
+
+```
+
+### Dimensionality Reduction 
+
+```{R}
+data4 %>% select("Close","Volume","PChange","CumPChange")%>% scale() %>% prcomp()-> PCA2
+summary(PCA2)
+
+data4 %>% filter()%>%select("Close","Volume","PChange","CumPChange")%>%scale %>% cor -> corND
+
+corND
+
+eigen(corND)
+
+index_pca <- PCA2
+
+index_pca$rotation[,1:2]%>%as.data.frame%>%rownames_to_column%>%
+  ggplot()+geom_hline(aes(yintercept=0),lty=2)+
+  geom_vline(aes(xintercept=0),lty=2)+ylab("PC2")+xlab("PC1")+
+  geom_segment(aes(x=0,y=0,xend=PC1,yend=PC2),arrow=arrow(),col="blue")+
+  geom_label(aes(x=PC1*1.1,y=PC2*1.1,label=rowname))
+
+
+index_pca$x%>%as.data.frame%>%mutate(Index=data4$Index)%>%
+  ggplot(aes(PC1,PC2,col=Index))+geom_point()
+```
+
+We can see that they spilt up i volume on the PC1 as expected from the results under the summaries. 

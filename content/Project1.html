@@ -1,0 +1,273 @@
+---
+title: "Project 1"
+author: "SDS348 Fall 2019"
+date: ''
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+
+<div id="benjamin-sakham-lomborg-bl26735" class="section level2">
+<h2>Benjamin Sakham Lomborg BL26735</h2>
+<p>I have choose the data from the 3 Index S&amp;P 500, NASDAQ and Dow Jones 30 (Dow Jones 30) from 01/01/2010 to 12/31/2018. The data is in three datasets.
+There is 7 variables from the beginning in each dataset. Data, Open, High, Low, Close, Adj. Close and Volume.</p>
+<ul>
+<li>Variables
+<ul>
+<li>Date
+<ul>
+<li>yyyy-mm-dd</li>
+</ul></li>
+<li>Open
+<ul>
+<li>The value the index opened in for the day</li>
+</ul></li>
+<li>High
+<ul>
+<li>Highest value for the day</li>
+</ul></li>
+<li>Low
+<ul>
+<li>Lowest value for the day</li>
+</ul></li>
+<li>Close
+<ul>
+<li>The value the index closed in for the day</li>
+</ul></li>
+<li>Adj. Close
+<ul>
+<li>The value the index Adj. Close in for the day</li>
+</ul></li>
+<li>Volume
+<ul>
+<li>How many stoch there have changed hands during the day</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>I have created 3 more variabels PCgange which is <span class="math inline">\(\frac{Close_n}{Close_{n-1}}-1\)</span>, CumPChange which is <span class="math inline">\(\sum_{n=1}^{len(n)}PChange_n\)</span> and the index name.</p>
+<pre class="r"><code>library(tidyverse)
+library(dplyr)
+library(DataCombine)
+library(ggridges)
+SP &lt;- read_csv(&quot;SP1018.csv&quot;)
+ND &lt;- read_csv(&quot;NASDAQ1018.csv&quot;)
+DJ &lt;- read_csv(&quot;DJ1018.csv&quot;)
+
+
+SP &lt;- SP %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+DJ &lt;- DJ %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+ND &lt;- ND %&gt;% mutate(PChange = Close/lag(Close) - 1) %&gt;% na.omit() %&gt;% 
+    mutate(CumPChange = cumsum(PChange))
+
+
+SP$Index &lt;- &quot;S&amp;P 500&quot;
+DJ$Index &lt;- &quot;Dow 30&quot;
+ND$Index &lt;- &quot;NASDAQ&quot;
+
+head(SP)</code></pre>
+<pre><code>## # A tibble: 6 x 10
+##   Date        Open  High   Low Close `Adj Close` Volume  PChange CumPChange
+##   &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt;
+## 1 2010-01-05 1133. 1137. 1130. 1137.       1137. 2.49e9  3.12e-3    0.00312
+## 2 2010-01-06 1136. 1139. 1134. 1137.       1137. 4.97e9  5.46e-4    0.00366
+## 3 2010-01-07 1136. 1142. 1131. 1142.       1142. 5.27e9  4.00e-3    0.00766
+## 4 2010-01-08 1141. 1145. 1136. 1145.       1145. 4.39e9  2.88e-3    0.0105 
+## 5 2010-01-11 1146. 1150. 1142. 1147.       1147. 4.26e9  1.75e-3    0.0123 
+## 6 2010-01-12 1144. 1144. 1132. 1136.       1136. 4.72e9 -9.38e-3    0.00291
+## # … with 1 more variable: Index &lt;chr&gt;</code></pre>
+<p>As you can see I Have to remove NA’s because otherwise I can’t use the “cumsum” function. It means I remove the first observation of each dataset.</p>
+<p>I have choose not to pivot_wieder and pivot_longer after talking to you to the office hours and because my data is allready tidy.</p>
+<div id="joining" class="section level3">
+<h3>Joining:</h3>
+<p>I make a ful_join to join the 3 datasets because they are really similar to each other and the only difference is the Index name.</p>
+<pre class="r"><code>data1 &lt;- full_join(SP, ND)
+data2 &lt;- full_join(data1, DJ)
+head(data2)</code></pre>
+<pre><code>## # A tibble: 6 x 10
+##   Date        Open  High   Low Close `Adj Close` Volume  PChange CumPChange
+##   &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;       &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt;
+## 1 2010-01-05 1133. 1137. 1130. 1137.       1137. 2.49e9  3.12e-3    0.00312
+## 2 2010-01-06 1136. 1139. 1134. 1137.       1137. 4.97e9  5.46e-4    0.00366
+## 3 2010-01-07 1136. 1142. 1131. 1142.       1142. 5.27e9  4.00e-3    0.00766
+## 4 2010-01-08 1141. 1145. 1136. 1145.       1145. 4.39e9  2.88e-3    0.0105 
+## 5 2010-01-11 1146. 1150. 1142. 1147.       1147. 4.26e9  1.75e-3    0.0123 
+## 6 2010-01-12 1144. 1144. 1132. 1136.       1136. 4.72e9 -9.38e-3    0.00291
+## # … with 1 more variable: Index &lt;chr&gt;</code></pre>
+<pre class="r"><code>nrow(data2)</code></pre>
+<pre><code>## [1] 6789</code></pre>
+</div>
+</div>
+<div id="wrangling" class="section level1">
+<h1>Wrangling</h1>
+<p>Now I wanna make 3 new varibles I can use to explore the data set</p>
+<pre class="r"><code>data3 &lt;- data2 %&gt;% mutate(Date2 = Date)
+data4 &lt;- data3 %&gt;% separate(Date2, into = c(&quot;year&quot;, &quot;month&quot;, 
+    &quot;day&quot;))</code></pre>
+<p>Let’s look at some summaries so we know the data set a bit better</p>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% summarize_if(is.numeric, mean)</code></pre>
+<pre><code>## # A tibble: 3 x 9
+##   Index    Open   High    Low  Close `Adj Close`  Volume PChange CumPChange
+##   &lt;chr&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+## 1 Dow 30 16629. 16711. 16543. 16633.      16633.  1.80e8 3.90e-4      0.466
+## 2 NASDAQ  4389.  4412.  4363.  4389.       4389.  1.95e9 5.25e-4      0.647
+## 3 S&amp;P 5…  1857.  1866.  1847.  1857.       1857.  3.73e9 3.96e-4      0.512</code></pre>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% summarise(sd(PChange))</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##   Index   `sd(PChange)`
+##   &lt;chr&gt;           &lt;dbl&gt;
+## 1 Dow 30        0.00896
+## 2 NASDAQ        0.0108 
+## 3 S&amp;P 500       0.00945</code></pre>
+<p>Now I wanna see 3 days there have been the biggest relative change for each index which the biggest first.</p>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% top_n(3, abs(PChange)) %&gt;% arrange(desc(abs(PChange))) %&gt;% 
+    select(Date, PChange, Index)</code></pre>
+<pre><code>## # A tibble: 9 x 3
+## # Groups:   Index [3]
+##   Date       PChange Index  
+##   &lt;date&gt;       &lt;dbl&gt; &lt;chr&gt;  
+## 1 2011-08-08 -0.0690 NASDAQ 
+## 2 2011-08-08 -0.0666 S&amp;P 500
+## 3 2018-12-26  0.0584 NASDAQ 
+## 4 2011-08-08 -0.0555 Dow 30 
+## 5 2011-08-09  0.0529 NASDAQ 
+## 6 2018-12-26  0.0498 Dow 30 
+## 7 2018-12-26  0.0496 S&amp;P 500
+## 8 2011-08-04 -0.0478 S&amp;P 500
+## 9 2011-08-10 -0.0462 Dow 30</code></pre>
+<p>As we can see 2011-08-08 is where alle the indexs lost most value. NASDAQ had the worst day.</p>
+<p>Now we can see what the record for most trades on one day is for each index</p>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% top_n(1, Volume) %&gt;% arrange(desc(Volume)) %&gt;% 
+    select(Date, PChange, Volume, Index)</code></pre>
+<pre><code>## # A tibble: 3 x 4
+## # Groups:   Index [3]
+##   Date       PChange      Volume Index  
+##   &lt;date&gt;       &lt;dbl&gt;       &lt;dbl&gt; &lt;chr&gt;  
+## 1 2010-05-06 -0.0324 10617810000 S&amp;P 500
+## 2 2010-05-06 -0.0344  4553600000 NASDAQ 
+## 3 2018-12-21 -0.0181   900510000 Dow 30</code></pre>
+<p>The biggest index have most trades as expected and the smalllest fewest trade</p>
+<p>Now we can see which index had the best return over the period if you fx had an ETF (exchange-traded fund) over the full Index.</p>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% arrange(desc(Date)) %&gt;% select(Date, 
+    CumPChange) %&gt;% head(3) %&gt;% arrange(desc(CumPChange))</code></pre>
+<pre><code>## # A tibble: 3 x 3
+## # Groups:   Index [3]
+##   Index   Date       CumPChange
+##   &lt;chr&gt;   &lt;date&gt;          &lt;dbl&gt;
+## 1 NASDAQ  2018-12-31      1.19 
+## 2 S&amp;P 500 2018-12-31      0.896
+## 3 Dow 30  2018-12-31      0.881</code></pre>
+<p>So NASDAQ is the best index over the periode which make sense because it’s the index with most technology stocks. There is’nt calculated for the inflation but it doesn’t matter because it’s the same currency</p>
+<p>But when was the best time to sell if you bought a ETF for each index at 2010-01-04</p>
+<pre class="r"><code>data4 %&gt;% group_by(Index) %&gt;% top_n(1, CumPChange) %&gt;% arrange(desc(CumPChange)) %&gt;% 
+    select(Date, CumPChange)</code></pre>
+<pre><code>## # A tibble: 3 x 3
+## # Groups:   Index [3]
+##   Index   Date       CumPChange
+##   &lt;chr&gt;   &lt;date&gt;          &lt;dbl&gt;
+## 1 NASDAQ  2018-08-29       1.38
+## 2 S&amp;P 500 2018-09-20       1.04
+## 3 Dow 30  2018-10-03       1.01</code></pre>
+<p>This is the 3 dates u should sell the.</p>
+<p>Now lets see what year, mounth and day is best retur in procentage</p>
+<pre class="r"><code>data4 %&gt;% group_by(year) %&gt;% summarize(meanPC = mean(PChange) * 
+    100) %&gt;% arrange(desc(meanPC)) %&gt;% head(3)</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##   year  meanPC
+##   &lt;chr&gt;  &lt;dbl&gt;
+## 1 2013  0.111 
+## 2 2017  0.0876
+## 3 2010  0.0507</code></pre>
+<pre class="r"><code>data4 %&gt;% group_by(month) %&gt;% summarize(meanPC = mean(PChange) * 
+    100) %&gt;% arrange(desc(meanPC)) %&gt;% head(3)</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##   month meanPC
+##   &lt;chr&gt;  &lt;dbl&gt;
+## 1 02     0.129
+## 2 07     0.117
+## 3 10     0.106</code></pre>
+<pre class="r"><code>data4 %&gt;% group_by(day) %&gt;% summarize(meanPC = mean(PChange) * 
+    100) %&gt;% arrange(desc(meanPC)) %&gt;% head(3)</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##   day   meanPC
+##   &lt;chr&gt;  &lt;dbl&gt;
+## 1 26     0.353
+## 2 16     0.228
+## 3 18     0.183</code></pre>
+<p>We can see 2013 is the best year, feb is the best month and the 26th is the best day for the three indexes.</p>
+<p>Okay, let’s look closer at NASDAQ what is the highest retur possible?</p>
+<pre class="r"><code>data4 %&gt;% filter(Index == &quot;NASDAQ&quot;) %&gt;% select(Low, High, Close) %&gt;% 
+    summary()</code></pre>
+<pre><code>##       Low            High          Close     
+##  Min.   :2061   Min.   :2111   Min.   :2092  
+##  1st Qu.:2881   1st Qu.:2911   1st Qu.:2896  
+##  Median :4321   Median :4371   Median :4352  
+##  Mean   :4363   Mean   :4412   Mean   :4389  
+##  3rd Qu.:5223   3rd Qu.:5259   3rd Qu.:5242  
+##  Max.   :8079   Max.   :8133   Max.   :8110</code></pre>
+<pre class="r"><code>(8133/2061 - 1) * 100</code></pre>
+<pre><code>## [1] 294.6143</code></pre>
+<p>So the max you could get from a ETF from NASDAQ with no gearing (borrowing money to invest):
+<span class="math display">\[ \frac{Max_{High}}{Min_{Low}}-1=\frac{8133}{2061}=294.6143\% \text{  return}\]</span></p>
+<p>So the most interesting things when we are looking at the summaries is that NASDAQ have been the best index when we are only looking at the return. If we had some more data fx the var numbers FED or forecasts from investments banks. We could then have checked if the risk is the answer to the big return at NASDAQ compared to the other two indexes. S&amp;P 500 and Dow 30 had a more similar return and maybe they are more “safe” to invest in.</p>
+<p>The most surprising thing was that the return in avg. at the 26th was much higher than alle the other dates.</p>
+<div id="visualizations" class="section level3">
+<h3>Visualizations</h3>
+<pre class="r"><code>data4 %&gt;% group_by(Date) %&gt;% ggplot(aes(Date, CumPChange, color = Index)) + 
+    geom_line() + geom_smooth(method = &quot;lm&quot;, aes(Date, CumPChange, 
+    color = Index)) + xlab(&quot;Date (Gap in years)&quot;) + ylab(&quot;Cumulative procentage change in decimals&quot;) + 
+    ggtitle(&quot;Retur over time&quot;)</code></pre>
+<p><img src="/Project1_files/figure-html/unnamed-chunk-11-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>data4 %&gt;% filter(year == &quot;2013&quot;) %&gt;% group_by(Index) %&gt;% ggplot(aes(month, 
+    PChange, color = Index)) + geom_point(stat = &quot;summary&quot;, alpha = 3/5) + 
+    geom_errorbar(stat = &quot;summary&quot;, alpha = 3/5) + xlab(&quot;Month 2013&quot;) + 
+    ylab(&quot;Procentage change in decimals&quot;) + ggtitle(&quot;PChange pr. month for 2013&quot;)</code></pre>
+<p><img src="/Project1_files/figure-html/unnamed-chunk-11-2.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="dimensionality-reduction" class="section level3">
+<h3>Dimensionality Reduction</h3>
+<pre class="r"><code>PCA2 &lt;- data4 %&gt;% select(&quot;Close&quot;, &quot;Volume&quot;, &quot;PChange&quot;, &quot;CumPChange&quot;) %&gt;% 
+    scale() %&gt;% prcomp()
+summary(PCA2)</code></pre>
+<pre><code>## Importance of components:
+##                           PC1    PC2    PC3     PC4
+## Standard deviation     1.3480 1.0020 0.9996 0.42387
+## Proportion of Variance 0.4543 0.2510 0.2498 0.04492
+## Cumulative Proportion  0.4543 0.7053 0.9551 1.00000</code></pre>
+<pre class="r"><code>corND &lt;- data4 %&gt;% filter() %&gt;% select(&quot;Close&quot;, &quot;Volume&quot;, &quot;PChange&quot;, 
+    &quot;CumPChange&quot;) %&gt;% scale %&gt;% cor
+
+corND</code></pre>
+<pre><code>##                    Close       Volume       PChange  CumPChange
+## Close       1.0000000000 -0.800522077  0.0002691837 0.167422974
+## Volume     -0.8005220768  1.000000000 -0.0360490544 0.008103661
+## PChange     0.0002691837 -0.036049054  1.0000000000 0.009278510
+## CumPChange  0.1674229745  0.008103661  0.0092785096 1.000000000</code></pre>
+<pre class="r"><code>eigen(corND)</code></pre>
+<pre><code>## eigen() decomposition
+## $values
+## [1] 1.8171104 1.0039740 0.9992503 0.1796653
+## 
+## $vectors
+##             [,1]         [,2]        [,3]        [,4]
+## [1,]  0.70704355 -0.009464367  0.04533871  0.70565165
+## [2,] -0.69274537  0.188506481  0.07995570  0.69150288
+## [3,]  0.03236648  0.391812596 -0.91892319  0.03186634
+## [4,]  0.13836792  0.900476886  0.38357744 -0.15120861</code></pre>
+<pre class="r"><code>index_pca &lt;- PCA2
+
+index_pca$rotation[, 1:2] %&gt;% as.data.frame %&gt;% rownames_to_column %&gt;% 
+    ggplot() + geom_hline(aes(yintercept = 0), lty = 2) + geom_vline(aes(xintercept = 0), 
+    lty = 2) + ylab(&quot;PC2&quot;) + xlab(&quot;PC1&quot;) + geom_segment(aes(x = 0, 
+    y = 0, xend = PC1, yend = PC2), arrow = arrow(), col = &quot;blue&quot;) + 
+    geom_label(aes(x = PC1 * 1.1, y = PC2 * 1.1, label = rowname))</code></pre>
+<p><img src="/Project1_files/figure-html/unnamed-chunk-12-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>index_pca$x %&gt;% as.data.frame %&gt;% mutate(Index = data4$Index) %&gt;% 
+    ggplot(aes(PC1, PC2, col = Index)) + geom_point()</code></pre>
+<p><img src="/Project1_files/figure-html/unnamed-chunk-12-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>We can see that they spilt up i volume on the PC1 as expected from the results under the summaries.</p>
+</div>
+</div>
